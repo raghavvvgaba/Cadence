@@ -1,10 +1,24 @@
 import { Agent, dedent, inference } from '@livekit/agents';
+import { createMacTools } from './tools/mac.ts';
+import { type CommandRunner, runCommand } from './tools/system.ts';
+import { MemoryTodoStore, type TodoStore, createTodoTools } from './tools/todos.ts';
+
+export interface CreateAgentOptions {
+  // How tools run macOS commands. Simulations pass a no-op runner so test
+  // scenarios don't actually open apps or change the volume.
+  run?: CommandRunner;
+  // Where the to-do list is kept: a JSON file normally, memory in simulations.
+  todoStore?: TodoStore;
+}
 
 // Build a custom voice AI assistant with the functional `Agent.create` API
-export function createAgent() {
+export function createAgent({
+  run = runCommand,
+  todoStore = new MemoryTodoStore(),
+}: CreateAgentOptions = {}) {
   return Agent.create({
     instructions: dedent`
-        You are a friendly, reliable voice assistant that answers questions, explains topics, and completes tasks with available tools.
+        You are a friendly, reliable voice assistant running on the user's Mac. You answer questions and control the computer with your tools: opening apps and websites, searching Google or YouTube, playing YouTube videos, changing the volume, and keeping the user's to-do list.
 
         # Output rules
 
@@ -29,6 +43,12 @@ export function createAgent() {
         - Collect required inputs first. Perform actions silently if the runtime expects it.
         - Speak outcomes clearly. If an action fails, say so once, propose a fallback, or ask how to proceed.
         - When tools return structured data, summarize it to the user in a way that is easy to understand, and don't directly recite identifiers or other technical details.
+        - After an action, confirm it in a few words, for example "Opening Spotify." Don't describe how you did it.
+        - Only claim an action happened if the tool succeeded. If an app isn't found and the tool suggests similar names, ask which one the user meant.
+        - Never say you can't control the computer; use the tools instead.
+        - Don't offer to do things your tools can't do.
+        - When asked what you can do, give two or three short examples and offer to tell them more, rather than listing everything.
+        - When reading the to-do list aloud, say how many items there are, then read them naturally; never read out item ids.
 
         # Guardrails
 
@@ -47,29 +67,8 @@ export function createAgent() {
     // (Note: This is for OpenAI GPT-Live. For other models, see https://docs.livekit.io/agents/models/realtime/)
     // llm: new inference.DuplexModel({ model: 'openai/gpt-live-1', voice: 'marin' }),
 
-    // To add tools, specify `tools` in the constructor.
-    // Here's an example that adds a simple weather tool.
-    // You also have to add `import { tool } from '@livekit/agents'` and `import { z } from 'zod'` to the top of this file
-    // tools: [
-    //   tool({
-    //     name: 'getWeather',
-    //     description: dedent`
-    //       Use this tool to look up current weather information in the given location.
-    //
-    //       If the location is not supported by the weather service, the tool will indicate this.
-    //       You must tell the user the location's weather is unavailable.
-    //     `,
-    //     parameters: z.object({
-    //       location: z
-    //         .string()
-    //         .describe('The location to look up weather information for (e.g. city name)'),
-    //     }),
-    //     execute: async ({ location }) => {
-    //       console.log(`Looking up weather for ${location}`);
-    //
-    //       return 'sunny with a temperature of 70 degrees.';
-    //     },
-    //   }),
-    // ],
+    // Tools run on this machine, so the agent can act on the user's Mac.
+    // See https://docs.livekit.io/agents/logic/tools/definition/
+    tools: [...createMacTools(run), ...createTodoTools(todoStore)],
   });
 }

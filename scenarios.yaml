@@ -52,3 +52,150 @@ scenarios:
       alternative, such as the friend using the official account recovery flow.
     tags:
       feature: guardrails
+
+  # Mac control tools. Under simulation the agent uses a dry-run command runner,
+  # so these never really open apps or change the volume, and every command
+  # "succeeds". The not-found path for openApp can't be exercised here.
+  # playYouTube still fetches the real YouTube results page to pick a video.
+  - id: SCN_3TW9E3Z2BC0H
+    label: Opens two apps in one request
+    instructions: |
+      PERSONA: A student starting a study session who wants their apps ready.
+      OPENING LINE: "Can you open Google Chrome and Notes for me?"
+      DO, IN ORDER:
+      1. After the assistant confirms, say thanks and end the conversation.
+    agent_expectations: >
+      Confirms that it opened both Google Chrome and Notes in a short spoken
+      reply. Does not say it is unable to open apps or control the computer,
+      and does not give the user instructions to open them manually.
+    tags:
+      feature: open-app
+
+  - id: SCN_dhk0CFxkWKGK
+    label: Plays music on YouTube
+    instructions: |
+      PERSONA: A student who wants background music while studying.
+      OPENING LINE: "Play some lo-fi study music on YouTube."
+      DO, IN ORDER:
+      1. After the assistant replies, say "Perfect, thanks." and end the conversation.
+    agent_expectations: >
+      Confirms that a lo-fi or study music video is now playing on YouTube, and
+      may mention its title. Does not just say it searched, does not say it
+      cannot access YouTube, and does not ask the user to find it themselves.
+    tags:
+      feature: play-youtube
+
+  - id: SCN_9bqXsjgH0G6w
+    label: Sets, raises, and mutes the volume
+    instructions: |
+      PERSONA: A student adjusting their laptop's sound.
+      OPENING LINE: "Set the volume to 20."
+      DO, IN ORDER:
+      1. After the assistant confirms, say: "Actually make it a bit louder."
+      2. After it confirms, say: "Now mute it."
+      3. After it confirms, say thanks and end the conversation.
+    agent_expectations: >
+      Confirms setting the volume to twenty, then confirms raising it to a level
+      above twenty, then confirms muting. Each reply is brief. Never says it
+      cannot change the volume.
+    tags:
+      feature: volume
+
+  - id: SCN_VOeMyf5to2Pf
+    label: Opens a named website
+    instructions: |
+      PERSONA: A student who wants to check their code.
+      OPENING LINE: "Open github dot com."
+      DO, IN ORDER:
+      1. After the assistant confirms, say thanks and end the conversation.
+    agent_expectations: >
+      Confirms that it opened GitHub in the browser. Does not run a search
+      instead of opening the site, and does not say it is unable to open websites.
+    tags:
+      feature: open-website
+
+  # To-do list tools. Under simulation each scenario gets its own in-memory list,
+  # seeded from `userdata.todos` (empty when omitted), so runs never touch
+  # data/todos.json.
+  - id: SCN_jsGSxzgDtUlR
+    label: Adds two items in one breath, then reads them back
+    instructions: |
+      PERSONA: A student planning their evening. Their to-do list starts empty.
+      OPENING LINE: "Add finish the HCI slides and email Professor Sharma to my to-do list."
+      DO, IN ORDER:
+      1. After the assistant confirms, ask: "What's on my list now?"
+      2. After it answers, say thanks and end the conversation.
+    agent_expectations: >
+      Confirms adding both items. When asked, says there are two items and names
+      both finishing the HCI slides and emailing Professor Sharma. Never reads
+      out numeric ids or any other item.
+    tags:
+      feature: todos
+
+  - id: SCN_pHmcZTkC2TrT
+    label: Reads back an existing list
+    instructions: |
+      PERSONA: A student checking what's left for today.
+      OPENING LINE: "What's on my to-do list?"
+      DO, IN ORDER:
+      1. After the assistant answers, say "Okay, thanks." and end the conversation.
+    agent_expectations: >
+      Reads out the two pending items, buying groceries and the lab report,
+      in a short spoken reply. Either leaves out the finished item about
+      submitting the quiz or clearly says it's already done. Never invents items
+      and never reads out numeric ids.
+    tags:
+      feature: todos
+    userdata:
+      todos:
+        - { id: 1, text: 'buy groceries', done: false, createdAt: '2026-11-01T09:00:00.000Z' }
+        - {
+            id: 2,
+            text: 'write the lab report',
+            done: false,
+            createdAt: '2026-11-01T09:05:00.000Z',
+          }
+        - { id: 3, text: 'submit the quiz', done: true, createdAt: '2026-11-01T09:10:00.000Z' }
+
+  - id: SCN_AHfWKbTB15ID
+    label: Marks an item done without naming it exactly
+    instructions: |
+      PERSONA: A relieved student who just finished a task.
+      OPENING LINE: "I finally finished the slides, tick that off."
+      DO, IN ORDER:
+      1. After the assistant confirms, ask: "What's left?"
+      2. After it answers, say thanks and end the conversation.
+    agent_expectations: >
+      Marks the slides item as done (not deleted) and confirms it. When asked
+      what's left, mentions only the item about calling the bank as still to do.
+    tags:
+      feature: todos
+    userdata:
+      todos:
+        - {
+            id: 1,
+            text: 'finish the HCI slides',
+            done: false,
+            createdAt: '2026-11-01T09:00:00.000Z',
+          }
+        - { id: 2, text: 'call the bank', done: false, createdAt: '2026-11-01T09:05:00.000Z' }
+
+  - id: SCN_7ClhFcNIKxZ4
+    label: Asks which item when a removal is ambiguous
+    instructions: |
+      PERSONA: A student tidying up their list, a little vague at first.
+      OPENING LINE: "Remove the report from my list."
+      DO, IN ORDER:
+      1. If the assistant asks which report, say: "The physics one."
+      2. After it confirms, say thanks and end the conversation.
+    agent_expectations: >
+      Does not remove anything until it knows which report is meant, since the
+      list has both a physics report and a history report. After the user says
+      the physics one, removes only that item and confirms it. The history
+      report stays on the list.
+    tags:
+      feature: todos
+    userdata:
+      todos:
+        - { id: 1, text: 'physics report', done: false, createdAt: '2026-11-01T09:00:00.000Z' }
+        - { id: 2, text: 'history report', done: false, createdAt: '2026-11-01T09:05:00.000Z' }
