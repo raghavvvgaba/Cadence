@@ -225,3 +225,6 @@ ehthumbs.db
 # The voice agent's to-do list (personal data, created at runtime)
 data/todos.json
 data/todos.json.tmp
+report/
+.agents/
+.codex/
