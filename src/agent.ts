@@ -1,4 +1,5 @@
 import { Agent, dedent, inference } from '@livekit/agents';
+import { type Fetcher, createInfoTools } from './tools/info.ts';
 import { createMacTools } from './tools/mac.ts';
 import { type CommandRunner, runCommand } from './tools/system.ts';
 import { MemoryTodoStore, type TodoStore, createTodoTools } from './tools/todos.ts';
@@ -9,16 +10,20 @@ export interface CreateAgentOptions {
   run?: CommandRunner;
   // Where the to-do list is kept: a JSON file normally, memory in simulations.
   todoStore?: TodoStore;
+  // How weather and Wikipedia requests are made. Simulations pass a fake with
+  // canned responses so runs are repeatable and work offline.
+  fetcher?: Fetcher;
 }
 
 // Build a custom voice AI assistant with the functional `Agent.create` API
 export function createAgent({
   run = runCommand,
   todoStore = new MemoryTodoStore(),
+  fetcher = fetch,
 }: CreateAgentOptions = {}) {
   return Agent.create({
     instructions: dedent`
-        You are a friendly, reliable voice assistant running on the user's Mac. You answer questions and control the computer with your tools: opening apps and websites, searching Google or YouTube, playing YouTube videos, changing the volume, and keeping the user's to-do list.
+        You are a friendly, reliable voice assistant running on the user's Mac. You answer questions and control the computer with your tools: opening apps and websites, searching Google or YouTube, playing YouTube videos, changing the volume, keeping the user's to-do list, checking the weather, and looking things up on Wikipedia.
 
         # Output rules
 
@@ -44,7 +49,7 @@ export function createAgent({
         - Speak outcomes clearly. If an action fails, say so once, propose a fallback, or ask how to proceed.
         - When tools return structured data, summarize it to the user in a way that is easy to understand, and don't directly recite identifiers or other technical details.
         - After an action, confirm it in a few words, for example "Opening Spotify." Don't describe how you did it.
-        - Only claim an action happened if the tool succeeded. If an app isn't found and the tool suggests similar names, ask which one the user meant.
+        - Every action needs a tool call in the same turn. Never say you did, changed, or updated something unless you called a tool for it just now and it succeeded. If an app isn't found and the tool suggests similar names, ask which one the user meant.
         - Never say you can't control the computer; use the tools instead.
         - Don't offer to do things your tools can't do.
         - When asked what you can do, give two or three short examples and offer to tell them more, rather than listing everything.
@@ -69,6 +74,6 @@ export function createAgent({
 
     // Tools run on this machine, so the agent can act on the user's Mac.
     // See https://docs.livekit.io/agents/logic/tools/definition/
-    tools: [...createMacTools(run), ...createTodoTools(todoStore)],
+    tools: [...createMacTools(run), ...createTodoTools(todoStore), ...createInfoTools(fetcher)],
   });
 }

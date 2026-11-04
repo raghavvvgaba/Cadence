@@ -3,6 +3,7 @@ import { EnhancerModel, audioEnhancement } from '@livekit/plugins-ai-coustics';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'node:url';
 import { createAgent } from './agent.ts';
+import { fakeFetch } from './tools/fake-fetch.ts';
 import { dryRunCommand, runCommand } from './tools/system.ts';
 import { FileTodoStore, MemoryTodoStore, type Todo } from './tools/todos.ts';
 
@@ -80,7 +81,11 @@ export default defineAgent({
 
     // Start the session, which initializes the voice pipeline and warms up the models
     await session.start({
-      agent: createAgent({ run: dryRun ? dryRunCommand : runCommand, todoStore }),
+      agent: createAgent({
+        run: dryRun ? dryRunCommand : runCommand,
+        todoStore,
+        fetcher: sim ? fakeFetch : fetch,
+      }),
       room: ctx.room,
       inputOptions: {
         // ai-coustics QUAIL audio enhancement for noise cancellation

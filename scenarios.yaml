@@ -199,3 +199,94 @@ scenarios:
       todos:
         - { id: 1, text: 'physics report', done: false, createdAt: '2026-11-01T09:00:00.000Z' }
         - { id: 2, text: 'history report', done: false, createdAt: '2026-11-01T09:05:00.000Z' }
+
+  # Weather and Wikipedia tools. Under simulation these get canned responses
+  # from src/tools/fake-fetch.ts: known cities are Delhi, Mumbai (rain
+  # tomorrow) and London; known articles are Fitts's law, Don Norman and
+  # Mercury (a disambiguation page). Expectations below rely on those values.
+  - id: SCN_PKeg5BgU1g9N
+    label: Asks for the city, then gives current weather
+    instructions: |
+      PERSONA: A student about to head out who hasn't said where they are.
+      OPENING LINE: "What's the weather like right now?"
+      DO, IN ORDER:
+      1. If the assistant asks which city, say: "Delhi."
+      2. After it answers, say thanks and end the conversation.
+    agent_expectations: >
+      Asks which city before giving any weather. After the user says Delhi,
+      says it is about twenty-eight degrees Celsius and partly cloudy, in one
+      or two sentences. Does not read out the whole week's forecast.
+    tags:
+      feature: weather
+
+  - id: SCN_bojbCJWyGkl5
+    label: Answers a rain question for tomorrow
+    instructions: |
+      PERSONA: A student deciding whether to carry an umbrella.
+      OPENING LINE: "Will it rain tomorrow in Mumbai?"
+      DO, IN ORDER:
+      1. After the assistant answers, say "Okay, umbrella it is." and end the conversation.
+    agent_expectations: >
+      Says rain is likely in Mumbai tomorrow, with a high chance of about
+      eighty-five percent, and may suggest an umbrella. Talks about tomorrow
+      only, not today or the rest of the week.
+    tags:
+      feature: weather
+
+  - id: SCN_73OXZi0q2Sqk
+    label: Admits it can't find an unknown city
+    instructions: |
+      PERSONA: A user with a slightly odd request.
+      OPENING LINE: "What's the weather in Zorbaville?"
+      DO, IN ORDER:
+      1. When the assistant replies, say "Never mind." and end the conversation.
+    agent_expectations: >
+      Says it couldn't find a place called Zorbaville and may ask the user to
+      repeat or check the name. Never states a temperature or condition for it.
+    tags:
+      feature: weather
+
+  - id: SCN_aQpcPdAACgyV
+    label: Looks up a topic on Wikipedia when asked, then gives more
+    instructions: |
+      PERSONA: An HCI student revising for an exam.
+      OPENING LINE: "Can you look up Fitts's law for me?"
+      DO, IN ORDER:
+      1. After the assistant answers, ask: "Tell me a bit more about it."
+      2. After it answers, say thanks and end the conversation.
+    agent_expectations: >
+      Explains that Fitts's law predicts how long it takes to move to a target
+      based on its distance and size, and says the information is from
+      Wikipedia. The follow-up adds detail without contradicting the first
+      answer. Replies stay short and spoken, with no lists.
+    tags:
+      feature: wikipedia
+
+  - id: SCN_3Wh12rvhS0wx
+    label: Asks which meaning for an ambiguous topic
+    instructions: |
+      PERSONA: A curious user who asks a vague question.
+      OPENING LINE: "Search the web for Mercury."
+      DO, IN ORDER:
+      1. If the assistant asks which Mercury, say: "The planet."
+      2. After it answers, say thanks and end the conversation.
+    agent_expectations: >
+      Does not pick a meaning on its own; says Mercury could mean the planet,
+      the chemical element or the Roman god, and asks which one. After the user
+      says the planet, tells them something about the planet Mercury, such as
+      it being the closest planet to the Sun.
+    tags:
+      feature: wikipedia
+
+  - id: SCN_jJPqZplNCi7P
+    label: Answers a casual question without being asked to look it up
+    instructions: |
+      PERSONA: A user making small talk.
+      OPENING LINE: "What's the capital of France?"
+      DO, IN ORDER:
+      1. After the assistant answers, say thanks and end the conversation.
+    agent_expectations: >
+      Answers Paris directly in one short sentence. Does not say it looked
+      anything up or that the answer is from Wikipedia.
+    tags:
+      feature: wikipedia

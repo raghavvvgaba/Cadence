@@ -113,10 +113,12 @@ export function createMacTools(run: CommandRunner) {
     },
   });
 
-  const searchWeb = llm.tool({
-    name: 'searchWeb',
+  const showSearchResults = llm.tool({
+    name: 'showSearchResults',
     description: dedent`
-      Search Google or YouTube in the user's default browser and show the results page.
+      Open a Google or YouTube search results page in the user's default browser, for the user to read themselves.
+      Use it only when the user says "Google" or asks to see or open search results on screen.
+      When they ask you to look something up, search the web, or search online, use lookupWikipedia instead.
       Use YouTube when the user wants to browse videos; to play something, use playYouTube instead.
       This only opens the results page on screen. It does not read the results back.
     `,
@@ -223,5 +225,5 @@ export function createMacTools(run: CommandRunner) {
     },
   });
 
-  return [openApp, searchWeb, playYouTube, openWebsite, controlVolume];
+  return [openApp, showSearchResults, playYouTube, openWebsite, controlVolume];
 }
